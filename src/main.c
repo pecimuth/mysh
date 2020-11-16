@@ -1,4 +1,4 @@
-#include "build/parser.h"
+#include "../build/parser.h"
 
 int main() {
     yyparse();

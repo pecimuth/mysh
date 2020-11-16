@@ -1,7 +1,11 @@
 CFLAGS = -Wall -Wextra
 LIBS = -lfl
 BUILD = build
-OBJECTS = $(BUILD)/main.o $(BUILD)/lexer.o $(BUILD)/parser.o
+SRC = src
+OBJECTS = $(BUILD)/main.o \
+	$(BUILD)/lexer.o \
+	$(BUILD)/parser.o \
+	$(BUILD)/ast.o
 
 .PHONY : clean
 .DEFAULT : all
@@ -14,13 +18,13 @@ $(BUILD) :
 $(BUILD)/mysh : $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $(OBJECTS) $(LIBS)
 
-$(BUILD)/lexer.c : lexer.l
-	flex -o $(BUILD)/lexer.c lexer.l
+$(BUILD)/lexer.c : $(SRC)/lexer.l
+	flex -o $(BUILD)/lexer.c $<
 
-$(BUILD)/parser.c : parser.y
+$(BUILD)/parser.c : $(SRC)/parser.y
 	bison --defines=$(BUILD)/parser.h -o $(BUILD)/parser.c $<
 
-$(BUILD)/parser.h : parser.y
+$(BUILD)/parser.h : $(SRC)/parser.y
 	bison --defines=$(BUILD)/parser.h -o $(BUILD)/parser.c $<
 
 $(BUILD)/lexer.o : $(BUILD)/lexer.c $(BUILD)/parser.h
@@ -29,7 +33,7 @@ $(BUILD)/lexer.o : $(BUILD)/lexer.c $(BUILD)/parser.h
 $(BUILD)/parser.o : $(BUILD)/parser.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILD)/%.o : %.c
+$(BUILD)/%.o : $(SRC)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD)/main.o : $(BUILD)/parser.h
