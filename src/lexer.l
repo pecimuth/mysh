@@ -1,11 +1,12 @@
 %{
 #include <stdio.h>
-#include "parser.h"
 #include "../include/ast.h"
+#include "parser.h"
+
 %}
 
 %%
-[a-zA-Z0-9_-]+         { alloc_copy(&yylval.word, yytext); return WORD; }
+[a-zA-Z0-9_-]+         { yylval.word_node = make_word_node(yytext); return WORD; }
 ;|\n                   { return SEP; }   
 <<EOF>>                { return END; }                
 .                      /* ignore */

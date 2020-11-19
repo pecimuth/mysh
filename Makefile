@@ -1,7 +1,8 @@
-CFLAGS = -Wall -Wextra
+CFLAGS = -Wall -Wextra -g
 LIBS = -lfl
 BUILD = build
 SRC = src
+INCLUDE = include
 OBJECTS = $(BUILD)/main.o \
 	$(BUILD)/lexer.o \
 	$(BUILD)/parser.o \
@@ -36,7 +37,9 @@ $(BUILD)/parser.o : $(BUILD)/parser.c
 $(BUILD)/%.o : $(SRC)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILD)/main.o : $(BUILD)/parser.h
+$(SRC)/main.c : $(BUILD)/parser.h
+$(SRC)/parser.c : $(INCLUDE)/ast.h
+$(SRC)/ast.c : $(INCLUDE)/ast.h
 
 clean :
 	rm -r $(BUILD)

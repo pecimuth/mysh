@@ -1,19 +1,21 @@
 %{
 #include <stdio.h>
+#include "../include/ast.h"
 
 int yylex();
 int yyerror();
 %}
 
 %union {
-    char* word;
+    struct word_node* word_node;
+    struct word_node_head word_node_head;
 }
 
 %token                          END         0       "end of file"
 %token                          SEP                 "; or newline"
-%token<word>                    WORD                "word"
+%token<word_node>               WORD                "word"
 
-%type<word>                     command
+%type<word_node_head>           command
 
 %%
 
@@ -22,15 +24,15 @@ script:
     |
     script SEP
     |
-    command                     { printf("command: %s\n", $1); }
+    command                     { print_word_nodes(&$1); destroy_word_nodes(&$1); }
     |
-    script SEP command          { printf("command: %s\n", $3); }
+    script SEP command          { print_word_nodes(&$3); destroy_word_nodes(&$3); }
     ;
 
 command:
-    WORD                        { $$ = $1;}
+    WORD                        { $$ = make_word_node_head(); prepend_word_node(&$$, $1);}
     |
-    command WORD                { $$ = $1;}
+    WORD command                { $$ = $2; prepend_word_node(&$$, $1); }
     ;
 
 %%
