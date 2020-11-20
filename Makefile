@@ -1,5 +1,5 @@
 CFLAGS = -Wall -Wextra -g
-LIBS = -lfl
+LIBS = -lfl -lreadline
 BUILD = build
 SRC = src
 INCLUDE = include
@@ -8,7 +8,8 @@ OBJECTS = $(BUILD)/main.o \
 	$(BUILD)/parser.o \
 	$(BUILD)/ast.o \
 	$(BUILD)/exec.o \
-	$(BUILD)/env.o
+	$(BUILD)/env.o \
+	$(BUILD)/front.o
 
 .PHONY : clean
 .DEFAULT : all
@@ -40,10 +41,12 @@ $(BUILD)/%.o : $(SRC)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(SRC)/main.c : $(BUILD)/parser.h
-$(SRC)/parser.c : $(INCLUDE)/ast.h
+$(SRC)/parser.y : $(INCLUDE)/ast.h
+$(SRC)/lexer.l : $(INCLUDE)/front.h
 $(SRC)/ast.c : $(INCLUDE)/ast.h
 $(SRC)/exec.c : $(INCLUDE)/exec.h $(INCLUDE)/ast.h $(INCLUDE)/env.h
 $(SRC)/env.c : $(INCLUDE)/env.h
+$(SRC)/front.c : $(INCLUDE)/front.h
 
 clean :
 	rm -r $(BUILD)

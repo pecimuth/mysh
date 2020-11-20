@@ -1,14 +1,17 @@
 %{
 #include <stdio.h>
 #include "../include/ast.h"
+#include "../include/front.h"
 #include "parser.h"
+
+#define YY_INPUT(buf,result,max_size) result = get_input(buf, max_size);
 
 %}
 
 %%
 [a-zA-Z0-9_-]+         { yylval.word_node = make_word_node(yytext); return WORD; }
-;;+                    { return BADSEP; }
-;|\n                   { return SEP; }
+;                      { return SEMIC; }
+\n                     { return LF; }
 <<EOF>>                { return END; }
 .                      /* ignore */
 %%

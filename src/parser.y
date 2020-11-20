@@ -13,8 +13,8 @@ int yyerror();
 }
 
 %token                          END         0       "end of file"
-%token                          SEP                 "; or newline"
-%token                          BADSEP
+%token                          SEMIC               ";"
+%token                          LF                  "line feed"
 %token<word_node>               WORD                "word"
 
 %type<word_node_head>           command
@@ -24,11 +24,19 @@ int yyerror();
 script:
     %empty
     |
-    script SEP
+    LF
     |
+    error LF
+    |
+    script script_line SEMIC LF
+    |
+    script script_line LF
+    ;
+
+script_line:
     command                     { print_word_nodes(&$1); execute(&$1); destroy_word_nodes(&$1); }
     |
-    script SEP command          { print_word_nodes(&$3); execute(&$3); destroy_word_nodes(&$3); }
+    script_line SEMIC command   { print_word_nodes(&$3); execute(&$3); destroy_word_nodes(&$3); }
     ;
 
 command:
