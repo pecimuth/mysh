@@ -4,21 +4,12 @@
 #include <assert.h>
 #include <stdio.h>
 
-char* alloc_copy(const char* src) {
-    char* dest = malloc(strlen(src) + 1);
-    if (dest == NULL) {
-        return NULL;
-    }
-    strcpy(dest, src);
-    return dest;
-}
-
 word_node_t* make_word_node(const char* yytext) {
     word_node_t* node = malloc(sizeof(word_node_t));
     if (node == NULL) {
         return NULL;
     }
-    node->word = alloc_copy(yytext);
+    node->word = strdup(yytext);
     return node;
 }
 

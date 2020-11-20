@@ -9,7 +9,6 @@ typedef struct word_node {
 
 typedef SLIST_HEAD(word_node_head, word_node) word_node_head_t;
 
-char* alloc_copy(const char* src);
 word_node_t* make_word_node(const char* yytext);
 void destroy_word_node(word_node_t* node);
 

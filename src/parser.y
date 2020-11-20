@@ -1,6 +1,7 @@
 %{
 #include <stdio.h>
 #include "../include/ast.h"
+#include "../include/exec.h"
 
 int yylex();
 int yyerror();
@@ -13,6 +14,7 @@ int yyerror();
 
 %token                          END         0       "end of file"
 %token                          SEP                 "; or newline"
+%token                          BADSEP
 %token<word_node>               WORD                "word"
 
 %type<word_node_head>           command
@@ -24,9 +26,9 @@ script:
     |
     script SEP
     |
-    command                     { print_word_nodes(&$1); destroy_word_nodes(&$1); }
+    command                     { print_word_nodes(&$1); execute(&$1); destroy_word_nodes(&$1); }
     |
-    script SEP command          { print_word_nodes(&$3); destroy_word_nodes(&$3); }
+    script SEP command          { print_word_nodes(&$3); execute(&$3); destroy_word_nodes(&$3); }
     ;
 
 command:

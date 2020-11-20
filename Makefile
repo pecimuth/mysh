@@ -6,7 +6,9 @@ INCLUDE = include
 OBJECTS = $(BUILD)/main.o \
 	$(BUILD)/lexer.o \
 	$(BUILD)/parser.o \
-	$(BUILD)/ast.o
+	$(BUILD)/ast.o \
+	$(BUILD)/exec.o \
+	$(BUILD)/env.o
 
 .PHONY : clean
 .DEFAULT : all
@@ -40,6 +42,8 @@ $(BUILD)/%.o : $(SRC)/%.c
 $(SRC)/main.c : $(BUILD)/parser.h
 $(SRC)/parser.c : $(INCLUDE)/ast.h
 $(SRC)/ast.c : $(INCLUDE)/ast.h
+$(SRC)/exec.c : $(INCLUDE)/exec.h $(INCLUDE)/ast.h $(INCLUDE)/env.h
+$(SRC)/env.c : $(INCLUDE)/env.h
 
 clean :
 	rm -r $(BUILD)

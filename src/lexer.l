@@ -7,7 +7,8 @@
 
 %%
 [a-zA-Z0-9_-]+         { yylval.word_node = make_word_node(yytext); return WORD; }
-;|\n                   { return SEP; }   
-<<EOF>>                { return END; }                
+;;+                    { return BADSEP; }
+;|\n                   { return SEP; }
+<<EOF>>                { return END; }
 .                      /* ignore */
 %%
