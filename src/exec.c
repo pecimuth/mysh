@@ -4,6 +4,10 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <errno.h>
 
 void execute(word_node_head_t* head) {
     assert(head != NULL);
@@ -23,6 +27,23 @@ void execute(word_node_head_t* head) {
         exit_value = exec_pwd(argc, argv);
     } else if (strcmp(node->word, "cd") == 0) {
         exit_value = exec_cd(argc, argv);
+    } else {
+        int pid = fork();
+        if (pid == -1) {
+            exit_value = 1;
+        } else if (pid == 0) {
+            execvp(node->word, argv);
+            if (errno == EACCES) {
+                printf("%s not found\n", node->word);
+            }
+            exit(1);
+        } else {
+            int wstatus;
+            exit_value = waitpid(pid, &wstatus, 0);
+            if (exit_value == 0) {
+                exit_value = WEXITSTATUS(wstatus);
+            }
+        }
     }
 
     free(argv);
@@ -35,7 +56,7 @@ void prepare_args(word_node_head_t* head, int* argc, char*** argv) {
     SLIST_FOREACH(node, head, nodes)
         ++*argc;
 
-    *argv = (char**)malloc(sizeof(char*) * *argc);
+    *argv = (char**)malloc(sizeof(char*) * (*argc + 1));
     assert(*argv != NULL);
 
     char** it = *argv;
@@ -43,6 +64,7 @@ void prepare_args(word_node_head_t* head, int* argc, char*** argv) {
         *it = node->word;
         ++it;
     }
+    *it = NULL;
 }
 
 int exec_exit(int argc, char** argv) {

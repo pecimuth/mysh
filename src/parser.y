@@ -34,9 +34,9 @@ script:
     ;
 
 script_line:
-    command                     { print_word_nodes(&$1); execute(&$1); destroy_word_nodes(&$1); }
+    command                     { execute(&$1); destroy_word_nodes(&$1); }
     |
-    script_line SEMIC command   { print_word_nodes(&$3); execute(&$3); destroy_word_nodes(&$3); }
+    script_line SEMIC command   { execute(&$3); destroy_word_nodes(&$3); }
     ;
 
 command:

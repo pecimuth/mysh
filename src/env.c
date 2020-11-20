@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
+#include <dirent.h>
 
 const char* get_pwd() {
     return getenv("PWD");
@@ -51,9 +54,4 @@ void set_exit_value(int val) {
 
 int get_exit_value() {
     return exit_value;
-}
-
-const char* find_in_path(const char* cmd) {
-    (void)cmd;
-    return getenv("PATH");
 }

@@ -9,6 +9,4 @@ const char* change_dir_old();
 void set_exit_value(int val);
 int get_exit_value();
 
-const char* find_in_path(const char* cmd);
-
 #endif
