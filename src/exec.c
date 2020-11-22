@@ -41,9 +41,10 @@ void execute(word_node_head_t* head) {
             exit(1);
         } else {
             int wstatus;
-            exit_value = waitpid(pid, &wstatus, 0);
-            if (exit_value == 0) {
+            if (waitpid(pid, &wstatus, 0) > 0) {
                 exit_value = WEXITSTATUS(wstatus);
+            } else {
+                exit_value = 1;
             }
         }
     }
