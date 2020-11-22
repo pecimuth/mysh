@@ -42,6 +42,9 @@ void set_args(int argc, char** argv) {
 
     if (optind == argc) {
         interactive = true;
+        if (isatty(STDIN_FILENO)) {
+            yyrestart(fopen("/dev/null", "r"));
+        }
         yyparse();
         return;
     }
@@ -50,20 +53,6 @@ void set_args(int argc, char** argv) {
     yyrestart(input_file);
     yyparse();
     fclose(input_file);
-}
-
-static size_t get_input_from_yyin(char* buf, size_t max_size, FILE* yyin) {
-    size_t result = 0;
-    errno = 0;
-    while ((result = fread(buf, 1, max_size, yyin)) == 0 && ferror(yyin)) {
-        if (errno != EINTR) {
-            //YY_FATAL_ERROR( "input in flex scanner failed" );
-            return 0;
-        }
-        errno = 0;
-        clearerr(yyin);
-    }
-    return result;
 }
 
 static void signal_handler(int sig) {
@@ -79,7 +68,19 @@ static int reset_prompt() {
     return 0;
 }
 
-static size_t get_input_from_readline(char* buf, size_t max_size) {
+static char* rl_buf = NULL;
+static YY_BUFFER_STATE rl_buf_state;
+
+int yywrap() {
+    if (!interactive) {
+        return 1;
+    }
+
+    if (rl_buf != NULL) {
+        free(rl_buf);
+        yy_delete_buffer(rl_buf_state);
+    }
+
     char prompt[32];
     sprintf(prompt, "mysh:%.24s$ ", get_pwd());
 
@@ -91,23 +92,21 @@ static size_t get_input_from_readline(char* buf, size_t max_size) {
 
     if (line == NULL) {
         printf("\n");
-        return 0;
+        return 1;
     }
-    if (strlen(line) + 2 > max_size) {
-        free(line);
-        return 0;
-    }
-    int result = sprintf(buf, "%s\n", line);
+
     if (strcmp(line, "") != 0) {
         add_history(line);
     }
-    free(line);
-    return result;
-}
 
-size_t get_input(char* buf, size_t max_size, FILE* yyin) {
-    if (interactive && isatty(STDIN_FILENO)) {
-        return get_input_from_readline(buf, max_size);
-    }
-    return get_input_from_yyin(buf, max_size, yyin);
+    size_t buf_len = strlen(line) + 3;
+    char* rl_buf = malloc(buf_len);
+    strcpy(rl_buf, line);
+    free(line);
+    rl_buf[buf_len - 1] = 0;
+    rl_buf[buf_len - 2] = 0;
+    rl_buf[buf_len - 3] = '\n';
+
+    rl_buf_state = yy_scan_string(rl_buf);
+    return 0;
 }

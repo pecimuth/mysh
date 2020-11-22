@@ -3,9 +3,6 @@
 #include "../include/ast.h"
 #include "../include/front.h"
 #include "parser.h"
-
-#define YY_INPUT(buf,result,max_size) result = get_input(buf, max_size, yyin);
-
 %}
 
 %option nounput
