@@ -14,12 +14,12 @@ OBJECTS = $(BUILD)/main.o \
 .PHONY : clean
 .DEFAULT : all
 
-all : $(BUILD) $(BUILD)/mysh
+all : mysh
 
 $(BUILD) :
 	mkdir $@
 
-$(BUILD)/mysh : $(OBJECTS)
+mysh : $(BUILD) $(OBJECTS) 
 	$(CC) $(CFLAGS) -o $@ $(OBJECTS) $(LIBS)
 
 $(BUILD)/lexer.c : $(SRC)/lexer.l
@@ -49,4 +49,4 @@ $(SRC)/env.c : $(INCLUDE)/env.h
 $(SRC)/front.c : $(INCLUDE)/front.h
 
 clean :
-	rm -r $(BUILD)
+	rm -r $(BUILD) mysh

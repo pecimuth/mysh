@@ -18,7 +18,9 @@ size_t get_input(char* buf, size_t size) {
         return YY_NULL;
     }
     sprintf(buf, "%s\n", line);
-    add_history(line);
+    if (strcmp(line, "") != 0) {
+        add_history(line);
+    }
     free(line);
     return strlen(buf);
 }

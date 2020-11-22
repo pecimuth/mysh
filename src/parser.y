@@ -24,9 +24,9 @@ int yyerror();
 script:
     %empty
     |
-    LF
-    |
     error LF
+    |
+    script LF
     |
     script script_line SEMIC LF
     |

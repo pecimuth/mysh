@@ -22,7 +22,7 @@ void execute(word_node_head_t* head) {
     int exit_value = 1;
 
     if (strcmp(node->word, "exit") == 0) {
-        exit_value = exec_exit(argc, argv);
+        exit(get_exit_value());
     } else if (strcmp(node->word, "pwd") == 0) {
         exit_value = exec_pwd(argc, argv);
     } else if (strcmp(node->word, "cd") == 0) {
@@ -33,8 +33,10 @@ void execute(word_node_head_t* head) {
             exit_value = 1;
         } else if (pid == 0) {
             execvp(node->word, argv);
-            if (errno == EACCES) {
-                printf("%s not found\n", node->word);
+            if (errno == ENOENT) {
+                printf("No such file '%s'\n", node->word);
+            } else if (errno == EACCES) {
+                printf("Permission denied: '%s'\n", node->word);
             }
             exit(1);
         } else {
@@ -65,13 +67,6 @@ void prepare_args(word_node_head_t* head, int* argc, char*** argv) {
         ++it;
     }
     *it = NULL;
-}
-
-int exec_exit(int argc, char** argv) {
-    (void)argc;
-    (void)argv;
-    exit(get_exit_value());
-    return 0;
 }
 
 int exec_pwd(int argc, char** argv) {
