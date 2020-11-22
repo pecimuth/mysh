@@ -1,5 +1,8 @@
+#include "../include/ast.h"
+#include "../build/parser.h"
 #include "../include/env.h"
 #include "../include/front.h"
+#include <assert.h>
 #include <errno.h>
 #include <readline/history.h>
 #include <readline/readline.h>
@@ -7,6 +10,49 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+typedef struct yy_buffer_state* YY_BUFFER_STATE;
+extern YY_BUFFER_STATE yy_scan_string(char*);
+extern YY_BUFFER_STATE yy_create_buffer(FILE*, int);
+extern void yy_switch_to_buffer(YY_BUFFER_STATE);
+extern void yy_delete_buffer(YY_BUFFER_STATE);
+
+static bool interactive = false;
+
+void set_args(int argc, char** argv) {
+    int opt;
+    while ((opt = getopt(argc, argv, "c:")) != -1) {
+        switch (opt) {
+        case 'c': {
+            size_t buf_len = strlen(optarg) + 3;
+            char* buf = malloc(buf_len);
+            strcpy(buf, optarg);
+            buf[buf_len - 1] = 0;
+            buf[buf_len - 2] = 0;
+            buf[buf_len - 3] = '\n';
+            YY_BUFFER_STATE buf_state = yy_scan_string(buf);
+            yyparse();
+            yy_delete_buffer(buf_state);
+            free(buf);
+            return;
+        }
+        default:
+            break;
+        }
+    }
+
+    if (optind == argc) {
+        interactive = true;
+        yyparse();
+        return;
+    }
+
+    FILE* input_file = fopen(argv[optind], "r");
+    YY_BUFFER_STATE buf_state = yy_create_buffer(input_file, 1234);
+    yy_switch_to_buffer(buf_state);
+    yyparse();
+    yy_delete_buffer(buf_state);
+}
 
 static size_t get_input_from_yyin(char* buf, size_t max_size, FILE* yyin) {
     size_t result = 0;
@@ -27,10 +73,19 @@ static void signal_handler(int sig) {
     set_exit_value(1);
 }
 
+static int reset_prompt() {
+    printf("\n");
+    rl_on_new_line();
+    rl_replace_line("", 0);
+    rl_redisplay();
+    return 0;
+}
+
 static size_t get_input_from_readline(char* buf, size_t max_size) {
     char prompt[32];
     sprintf(prompt, "mysh:%.24s$ ", get_pwd());
 
+    rl_signal_event_hook = reset_prompt;
     struct sigaction sa = { .sa_handler = signal_handler }, old_sa;
     sigaction(SIGINT, &sa, &old_sa);
     char* line = readline(prompt);
@@ -52,17 +107,8 @@ static size_t get_input_from_readline(char* buf, size_t max_size) {
     return result;
 }
 
-static int reset_prompt() {
-    printf("\n");
-    rl_on_new_line();
-    rl_replace_line("", 0);
-    rl_redisplay();
-    return 0;
-}
-
 size_t get_input(char* buf, size_t max_size, FILE* yyin) {
-    if (isatty(STDIN_FILENO)) {
-        rl_signal_event_hook = reset_prompt;
+    if (interactive && isatty(STDIN_FILENO)) {
         return get_input_from_readline(buf, max_size);
     }
     return get_input_from_yyin(buf, max_size, yyin);
