@@ -13,9 +13,8 @@
 
 typedef struct yy_buffer_state* YY_BUFFER_STATE;
 extern YY_BUFFER_STATE yy_scan_string(char*);
-extern YY_BUFFER_STATE yy_create_buffer(FILE*, int);
-extern void yy_switch_to_buffer(YY_BUFFER_STATE);
 extern void yy_delete_buffer(YY_BUFFER_STATE);
+extern void yyrestart(FILE*);
 
 static bool interactive = false;
 
@@ -48,10 +47,9 @@ void set_args(int argc, char** argv) {
     }
 
     FILE* input_file = fopen(argv[optind], "r");
-    YY_BUFFER_STATE buf_state = yy_create_buffer(input_file, 1234);
-    yy_switch_to_buffer(buf_state);
+    yyrestart(input_file);
     yyparse();
-    yy_delete_buffer(buf_state);
+    fclose(input_file);
 }
 
 static size_t get_input_from_yyin(char* buf, size_t max_size, FILE* yyin) {
