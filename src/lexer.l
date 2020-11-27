@@ -8,8 +8,16 @@
 %option nounput
 %option noinput
 
+%x comment
+
 %%
+<comment>{
+    \n                 { BEGIN(INITIAL); return LF; }
+    <<EOF>>            { return END; }
+    .                  /* ignore */
+}
 [a-zA-Z0-9_/.+-]+      { yylval.word_node = make_word_node(yytext); return WORD; }
+#                      { BEGIN(comment); }
 ;                      { return SEMIC; }
 \n                     { return LF; }
 <<EOF>>                { return END; }
