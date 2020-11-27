@@ -1,7 +1,6 @@
 #ifndef ENV_H
 #define ENV_H
 
-const char* get_pwd();
 int change_dir(const char* path);
 int change_dir_home();
 const char* change_dir_old();

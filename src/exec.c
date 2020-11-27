@@ -75,7 +75,12 @@ int exec_pwd(int argc, char** argv) {
     if (argc != 1) {
         return 1;
     }
-    printf("%s\n", get_pwd());
+    char* pwd = getcwd(NULL, 0);
+    if (pwd == NULL) {
+        return 1;
+    }
+    printf("%s\n", pwd);
+    free(pwd);
     return 0;
 }
 

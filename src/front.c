@@ -82,7 +82,11 @@ int yywrap() {
     }
 
     char prompt[32];
-    sprintf(prompt, "mysh:%.24s$ ", get_pwd());
+    const char* cwd = getcwd(NULL, 24);
+    sprintf(prompt, "mysh:%.24s$ ", cwd);
+    if (cwd != NULL) {
+        free(cwd);
+    }
 
     rl_signal_event_hook = reset_prompt;
     struct sigaction sa = { .sa_handler = signal_handler }, old_sa;
