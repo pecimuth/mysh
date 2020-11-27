@@ -1,6 +1,7 @@
 %{
 #include <stdio.h>
 #include "../include/ast.h"
+#include "../include/env.h"
 #include "../include/exec.h"
 
 int yylex();
@@ -48,6 +49,7 @@ command:
 %%
 
 int yyerror(char* str) {
+    set_exit_value(1);
     fprintf(stderr, "parser error: %s\n", str);
     return 1;
 }

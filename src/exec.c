@@ -97,5 +97,6 @@ int exec_cd(int argc, char** argv) {
 
         return change_dir(argv[1]);
     }
+    fprintf(stderr, "too many arguments\n");
     return 1;
 }

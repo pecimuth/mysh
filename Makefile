@@ -41,7 +41,7 @@ $(BUILD)/%.o : $(SRC)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(SRC)/main.c : $(BUILD)/parser.h
-$(SRC)/parser.y : $(INCLUDE)/ast.h
+$(SRC)/parser.y : $(INCLUDE)/ast.h $(INCLUDE)/env.h $(INCLUDE)/exec.h 
 $(SRC)/lexer.l : $(INCLUDE)/front.h
 $(SRC)/ast.c : $(INCLUDE)/ast.h
 $(SRC)/exec.c : $(INCLUDE)/exec.h $(INCLUDE)/ast.h $(INCLUDE)/env.h
