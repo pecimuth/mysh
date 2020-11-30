@@ -1,15 +1,19 @@
 #include "../include/ast.h"
-#include <stdlib.h>
-#include <string.h>
+#include "../include/env.h"
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 word_node_t* make_word_node(const char* yytext) {
     word_node_t* node = malloc(sizeof(word_node_t));
     if (node == NULL) {
-        return NULL;
+        exit(EXIT_VALUE_MEMORY);
     }
     node->word = strdup(yytext);
+    if (node->word == NULL) {
+        exit(EXIT_VALUE_MEMORY);
+    }
     return node;
 }
 
@@ -33,7 +37,7 @@ void destroy_word_nodes(word_node_head_t* head) {
         word_node_t* elem = SLIST_FIRST(head);
         SLIST_REMOVE_HEAD(head, nodes);
         destroy_word_node(elem);
-     }
+    }
 }
 
 void prepend_word_node(word_node_head_t* head, word_node_t* node) {
@@ -47,6 +51,6 @@ void print_word_nodes(word_node_head_t* head) {
     printf("[");
     word_node_t* node;
     SLIST_FOREACH(node, head, nodes)
-        printf(" %s", node->word);
+    printf(" %s", node->word);
     printf(" ]\n");
 }

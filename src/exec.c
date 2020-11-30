@@ -1,13 +1,13 @@
-#include "../include/exec.h"
 #include "../include/env.h"
+#include "../include/exec.h"
 #include <assert.h>
-#include <string.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <errno.h>
+#include <unistd.h>
 
 void execute(word_node_head_t* head) {
     assert(head != NULL);
@@ -24,29 +24,11 @@ void execute(word_node_head_t* head) {
     if (strcmp(node->word, "exit") == 0) {
         exit(get_exit_value());
     } else if (strcmp(node->word, "pwd") == 0) {
-        exit_value = exec_pwd(argc, argv);
+        exit_value = exec_pwd(argc);
     } else if (strcmp(node->word, "cd") == 0) {
         exit_value = exec_cd(argc, argv);
     } else {
-        int pid = fork();
-        if (pid == -1) {
-            exit_value = 1;
-        } else if (pid == 0) {
-            execvp(node->word, argv);
-            if (errno == ENOENT) {
-                printf("No such file '%s'\n", node->word);
-            } else if (errno == EACCES) {
-                printf("Permission denied: '%s'\n", node->word);
-            }
-            exit(1);
-        } else {
-            int wstatus;
-            if (waitpid(pid, &wstatus, 0) > 0) {
-                exit_value = WEXITSTATUS(wstatus);
-            } else {
-                exit_value = 1;
-            }
-        }
+        exit_value = exec_subshell(node->word, argv);
     }
 
     free(argv);
@@ -57,7 +39,7 @@ void prepare_args(word_node_head_t* head, int* argc, char*** argv) {
     *argc = 0;
     word_node_t* node;
     SLIST_FOREACH(node, head, nodes)
-        ++*argc;
+    ++*argc;
 
     *argv = (char**)malloc(sizeof(char*) * (*argc + 1));
     assert(*argv != NULL);
@@ -70,8 +52,7 @@ void prepare_args(word_node_head_t* head, int* argc, char*** argv) {
     *it = NULL;
 }
 
-int exec_pwd(int argc, char** argv) {
-    (void)argv;
+int exec_pwd(int argc) {
     if (argc != 1) {
         return 1;
     }
@@ -81,27 +62,49 @@ int exec_pwd(int argc, char** argv) {
     }
     printf("%s\n", pwd);
     free(pwd);
-    return 0;
+    return EXIT_VALUE_SUCCESS;
 }
 
 int exec_cd(int argc, char** argv) {
-    (void)argc;
-    (void)argv;
-
     if (argc == 1) {
         return change_dir_home();
     } else if (argc == 2) {
         if (strcmp(argv[1], "-") == 0) {
             const char* old = change_dir_old();
             if (old == NULL) {
-                return 1;
+                return EXIT_VALUE_BAD_ENV;
             }
             printf("%s\n", old);
-            return 0;
+            return EXIT_VALUE_SUCCESS;
         }
 
         return change_dir(argv[1]);
     }
-    fprintf(stderr, "too many arguments\n");
-    return 1;
+    fprintf(stderr, "Got too many arguments\n");
+    return EXIT_VALUE_BAD_ARG;
+}
+
+int exec_subshell(char* cmd, char** argv) {
+    int pid = fork();
+    switch (pid) {
+    case -1:
+        return EXIT_VALUE_EXEC;
+    case 0:
+        execvp(cmd, argv);
+        if (errno == ENOENT) {
+            fprintf(stderr, "No such file '%s'\n", cmd);
+            exit(EXIT_VALUE_NO_FILE);
+        } else if (errno == EACCES) {
+            fprintf(stderr, "Permission denied: '%s'\n", cmd);
+            exit(EXIT_VALUE_PERMISSION);
+        }
+        return EXIT_VALUE_EXEC;
+    default: {
+        int wstatus;
+        if (waitpid(pid, &wstatus, 0) > 0) {
+            return WEXITSTATUS(wstatus);
+        }
+    }
+    }
+    return EXIT_VALUE_EXEC;
 }

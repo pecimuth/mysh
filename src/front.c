@@ -1,5 +1,5 @@
-#include "../include/ast.h"
 #include "../build/parser.h"
+#include "../include/ast.h"
 #include "../include/env.h"
 #include "../include/front.h"
 #include <assert.h>
@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#define YYWRAP_CONTINUE 0
+#define YYWRAP_STOP 1
+
 typedef struct yy_buffer_state* YY_BUFFER_STATE;
 extern YY_BUFFER_STATE yy_scan_string(char*);
 extern void yy_delete_buffer(YY_BUFFER_STATE);
@@ -18,17 +21,12 @@ extern void yyrestart(FILE*);
 
 static bool interactive = false;
 
-void set_args(int argc, char** argv) {
+void start(int argc, char** argv) {
     int opt;
     while ((opt = getopt(argc, argv, "c:")) != -1) {
         switch (opt) {
         case 'c': {
-            size_t buf_len = strlen(optarg) + 3;
-            char* buf = malloc(buf_len);
-            strcpy(buf, optarg);
-            buf[buf_len - 1] = 0;
-            buf[buf_len - 2] = 0;
-            buf[buf_len - 3] = '\n';
+            char* buf = make_rl_buf(optarg);
             YY_BUFFER_STATE buf_state = yy_scan_string(buf);
             yyparse();
             yy_delete_buffer(buf_state);
@@ -41,15 +39,23 @@ void set_args(int argc, char** argv) {
     }
 
     if (optind == argc) {
-        interactive = true;
         if (isatty(STDIN_FILENO)) {
-            yyrestart(fopen("/dev/null", "r"));
+            interactive = true;
+            parse_file("/dev/null");
+            return;
         }
         yyparse();
         return;
     }
 
-    FILE* input_file = fopen(argv[optind], "r");
+    parse_file(argv[optind]);
+}
+
+void parse_file(char* filename) {
+    FILE* input_file = fopen(filename, "r");
+    if (input_file == NULL) {
+        exit(EXIT_VALUE_OPEN);
+    }
     yyrestart(input_file);
     yyparse();
     fclose(input_file);
@@ -57,15 +63,7 @@ void set_args(int argc, char** argv) {
 
 static void signal_handler(int sig) {
     (void)sig;
-    set_exit_value(1);
-}
-
-static int reset_prompt() {
-    printf("\n");
-    rl_on_new_line();
-    rl_replace_line("", 0);
-    rl_redisplay();
-    return 0;
+    set_exit_value(EXIT_VALUE_INTERRUPT);
 }
 
 static char* rl_buf = NULL;
@@ -73,7 +71,7 @@ static YY_BUFFER_STATE rl_buf_state;
 
 int yywrap() {
     if (!interactive) {
-        return 1;
+        return YYWRAP_STOP;
     }
 
     if (rl_buf != NULL) {
@@ -82,35 +80,64 @@ int yywrap() {
     }
 
     char prompt[32];
-    const char* cwd = getcwd(NULL, 24);
-    sprintf(prompt, "mysh:%.24s$ ", cwd);
-    if (cwd != NULL) {
-        free(cwd);
+    make_prompt(prompt, sizeof(prompt));
+
+    char* line = read_line_or_reset(prompt);
+    if (line == NULL) {
+        printf("\n");
+        return YYWRAP_STOP;
+    }
+    if (strcmp(line, "") != 0) {
+        add_history(line);
     }
 
+    rl_buf = make_rl_buf(line);
+    free(line);
+
+    rl_buf_state = yy_scan_string(rl_buf);
+    return YYWRAP_CONTINUE;
+}
+
+void make_prompt(char* buf, size_t size) {
+    static size_t other_chars = strlen("mysh:$ ") + 1;
+    size -= other_chars;
+    assert(size > 0);
+
+    char* cwd = getcwd(NULL, size);
+    if (cwd == NULL) {
+        exit(EXIT_VALUE_BAD_ENV);
+    }
+
+    sprintf(buf, "mysh:%s$ ", cwd);
+    free(cwd);
+}
+
+static int reset_prompt() {
+    printf("\n");
+    rl_on_new_line();
+    rl_replace_line("", 0);
+    rl_redisplay();
+    return EXIT_VALUE_SUCCESS;
+}
+
+char* read_line_or_reset(char* prompt) {
     rl_signal_event_hook = reset_prompt;
     struct sigaction sa = { .sa_handler = signal_handler }, old_sa;
     sigaction(SIGINT, &sa, &old_sa);
     char* line = readline(prompt);
     sigaction(SIGINT, &old_sa, NULL);
+    return line;
+}
 
-    if (line == NULL) {
-        printf("\n");
-        return 1;
-    }
-
-    if (strcmp(line, "") != 0) {
-        add_history(line);
-    }
-
+char* make_rl_buf(char* line) {
     size_t buf_len = strlen(line) + 3;
     char* rl_buf = malloc(buf_len);
+    if (rl_buf == NULL) {
+        exit(EXIT_VALUE_MEMORY);
+    }
     strcpy(rl_buf, line);
-    free(line);
     rl_buf[buf_len - 1] = 0;
     rl_buf[buf_len - 2] = 0;
     rl_buf[buf_len - 3] = '\n';
-
-    rl_buf_state = yy_scan_string(rl_buf);
-    return 0;
+    return rl_buf;
 }

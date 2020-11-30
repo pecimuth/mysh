@@ -1,6 +1,9 @@
+%code requires {
+#include "../include/ast.h"
+}
+
 %{
 #include <stdio.h>
-#include "../include/ast.h"
 #include "../include/env.h"
 #include "../include/exec.h"
 

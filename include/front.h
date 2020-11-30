@@ -3,7 +3,12 @@
 #include <stddef.h>
 #include <stdio.h>
 
-void set_args(int argc, char** argv);
+void start(int argc, char** argv);
+void parse_file(char* filename);
 size_t get_input(char* buf, size_t size, FILE* yyin);
+
+void make_prompt(char* buf, size_t size);
+char* read_line_or_reset(char* prompt);
+char* make_rl_buf(char* line);
 
 #endif

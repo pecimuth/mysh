@@ -10,16 +10,16 @@
 int change_dir(const char* path) {
     char* pwd = getcwd(NULL, 0);
     if (pwd == NULL) {
-        return 1;
+        return EXIT_VALUE_BAD_ENV;
     }
 
     if (chdir(path) != 0) {
-        return 2;
+        return EXIT_VALUE_BAD_ENV;
     }
 
     char* new_pwd = getcwd(NULL, 0);
     if (new_pwd == NULL) {
-        return 3;
+        return EXIT_VALUE_BAD_ENV;
     }
     
     setenv("OLDPWD", pwd, 1);
@@ -28,27 +28,26 @@ int change_dir(const char* path) {
     free(pwd);
     free(new_pwd);
 
-    return 0;
+    return EXIT_VALUE_SUCCESS;
 }
 
 int change_dir_home() {
     const char* home = getenv("HOME");
     if (home == NULL) {
-        return 5;
+        return EXIT_VALUE_BAD_ENV;
     }
     return change_dir(home);
 }
 
 const char* change_dir_old() {
     const char* old = getenv("OLDPWD");
-    int result = change_dir(old);
-    if (result != 0) {
+    if (change_dir(old) != EXIT_VALUE_SUCCESS) {
         return NULL;
     }
     return getenv("PWD");
 }
 
-static int exit_value = 0;
+static int exit_value = EXIT_VALUE_SUCCESS;
 
 void set_exit_value(int val) {
     exit_value = val;
