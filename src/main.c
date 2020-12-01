@@ -5,5 +5,6 @@
 
 int main(int argc, char** argv) {
     start(argc, argv);
+    delete_buffers();
     return get_exit_value();
 }

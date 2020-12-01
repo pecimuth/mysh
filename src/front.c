@@ -18,6 +18,7 @@ typedef struct yy_buffer_state* YY_BUFFER_STATE;
 extern YY_BUFFER_STATE yy_scan_string(char*);
 extern void yy_delete_buffer(YY_BUFFER_STATE);
 extern void yyrestart(FILE*);
+int yywrap();
 
 static bool interactive = false;
 
@@ -41,8 +42,7 @@ void start(int argc, char** argv) {
     if (optind == argc) {
         if (isatty(STDIN_FILENO)) {
             interactive = true;
-            parse_file("/dev/null");
-            return;
+            yywrap();
         }
         yyparse();
         return;
@@ -74,10 +74,7 @@ int yywrap() {
         return YYWRAP_STOP;
     }
 
-    if (rl_buf != NULL) {
-        free(rl_buf);
-        yy_delete_buffer(rl_buf_state);
-    }
+    delete_buffers();
 
     char prompt[32];
     make_prompt(prompt, sizeof(prompt));
@@ -96,6 +93,13 @@ int yywrap() {
 
     rl_buf_state = yy_scan_string(rl_buf);
     return YYWRAP_CONTINUE;
+}
+
+void delete_buffers() {
+    if (rl_buf != NULL) {
+        free(rl_buf);
+        yy_delete_buffer(rl_buf_state);
+    }
 }
 
 void make_prompt(char* buf, size_t size) {
