@@ -76,7 +76,7 @@ int yywrap() {
 
     delete_buffers();
 
-    char prompt[32];
+    char prompt[256];
     make_prompt(prompt, sizeof(prompt));
 
     char* line = read_line_or_reset(prompt);
