@@ -8,7 +8,7 @@
 #include "../include/exec.h"
 
 int yylex();
-int yyerror();
+void yyerror();
 %}
 
 %union {
@@ -29,6 +29,8 @@ script:
     %empty
     |
     error LF
+    |
+    SEMIC LF
     |
     script LF
     |
@@ -51,8 +53,7 @@ command:
 
 %%
 
-int yyerror(char* str) {
-    set_exit_value(1);
+void yyerror(char* str) {
     fprintf(stderr, "parser error: %s\n", str);
-    return 1;
+    set_exit_value(EXIT_VALUE_PARSER);
 }

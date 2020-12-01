@@ -1,6 +1,7 @@
 %{
 #include <stdio.h>
 #include "../include/ast.h"
+#include "../include/env.h"
 #include "../include/front.h"
 #include "parser.h"
 %}
@@ -21,5 +22,6 @@
 ;                      { return SEMIC; }
 \n                     { return LF; }
 <<EOF>>                { return END; }
-.                      /* ignore */
+[ \t\r\f]+             /* ignore */
+.                      { unexpected_character(yytext[0]); }
 %%

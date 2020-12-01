@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
-#include <dirent.h>
+#include <stdbool.h>
 
 int change_dir(const char* path) {
     char* pwd = getcwd(NULL, 0);
@@ -55,4 +55,20 @@ void set_exit_value(int val) {
 
 int get_exit_value() {
     return exit_value;
+}
+
+static bool lexer_error = false;
+
+void unexpected_character(char c) {
+    fprintf(stderr, "unexpected character '%c'\n", c);
+    lexer_error = true;
+    set_exit_value(EXIT_VALUE_LEXER);
+}
+
+bool has_lexer_error() {
+    return lexer_error;
+}
+
+void clear_lexer_error() {
+    lexer_error = false;
 }

@@ -12,6 +12,12 @@
 
 void execute(word_node_head_t* head) {
     assert(head != NULL);
+
+    if (has_lexer_error()) {
+        clear_lexer_error();
+        return;
+    }
+
     word_node_t* node = SLIST_FIRST(head);
     assert(node != NULL);
     assert(node->word != NULL);
