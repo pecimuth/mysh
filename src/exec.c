@@ -2,6 +2,7 @@
 #include "../include/exec.h"
 #include <assert.h>
 #include <errno.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -84,6 +85,13 @@ int exec_cd(int argc, char** argv) {
     return EXIT_VALUE_BAD_ARG;
 }
 
+static pid_t child_pid = -1;
+
+static void forward_signal(int sig) {
+    assert(child_pid != -1);
+    kill(child_pid, sig);
+}
+
 int exec_subshell(char* cmd, char** argv) {
     int pid = fork();
     switch (pid) {
@@ -100,10 +108,22 @@ int exec_subshell(char* cmd, char** argv) {
         }
         return EXIT_VALUE_EXEC;
     default: {
-        int wstatus;
-        if (waitpid(pid, &wstatus, 0) > 0) {
+        child_pid = pid;
+        int wstatus = 0;
+
+        struct sigaction sa = {
+            .sa_handler = forward_signal,
+            .sa_flags = SA_RESTART
+        }, old_sa;
+        sigaction(SIGINT, &sa, &old_sa);
+        if (waitpid(pid, &wstatus, 0) != -1) {
+            sigaction(SIGINT, &old_sa, NULL);
+            if (WIFSIGNALED(wstatus)) {
+                return EXIT_VALUE_SIG_OFFSET + WTERMSIG(wstatus);
+            }
             return WEXITSTATUS(wstatus);
         }
+        sigaction(SIGINT, &old_sa, NULL);
     }
     }
     return EXIT_VALUE_EXEC;
