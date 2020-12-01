@@ -30,13 +30,13 @@ script:
     |
     error LF
     |
-    SEMIC LF
+    SEMIC LF { clear_lexer_error(); }
     |
-    script LF
+    script LF { clear_lexer_error(); }
     |
-    script script_line SEMIC LF
+    script script_line SEMIC LF { clear_lexer_error(); }
     |
-    script script_line LF
+    script script_line LF { clear_lexer_error(); }
     ;
 
 script_line:
