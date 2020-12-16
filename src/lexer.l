@@ -1,8 +1,8 @@
 %{
 #include <stdio.h>
-#include "../include/ast.h"
-#include "../include/env.h"
-#include "../include/front.h"
+#include "ast.h"
+#include "env.h"
+#include "front.h"
 #include "parser.h"
 %}
 

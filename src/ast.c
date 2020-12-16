@@ -1,5 +1,5 @@
-#include "../include/ast.h"
-#include "../include/env.h"
+#include "ast.h"
+#include "env.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

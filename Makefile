@@ -1,4 +1,4 @@
-CFLAGS = -Wall -Wextra -g
+CFLAGS = -Wall -Wextra -g -Iinclude -Ibuild
 LIBS = -lfl -lreadline
 BUILD = build
 SRC = src

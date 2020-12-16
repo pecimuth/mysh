@@ -1,7 +1,7 @@
-#include "../build/parser.h"
-#include "../include/ast.h"
-#include "../include/env.h"
-#include "../include/front.h"
+#include "parser.h"
+#include "ast.h"
+#include "env.h"
+#include "front.h"
 #include <assert.h>
 #include <errno.h>
 #include <readline/history.h>

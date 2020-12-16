@@ -1,11 +1,11 @@
 %code requires {
-#include "../include/ast.h"
+#include "ast.h"
 }
 
 %{
 #include <stdio.h>
-#include "../include/env.h"
-#include "../include/exec.h"
+#include "env.h"
+#include "exec.h"
 
 int yylex();
 void yyerror();

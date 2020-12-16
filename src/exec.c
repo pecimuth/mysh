@@ -1,5 +1,5 @@
-#include "../include/env.h"
-#include "../include/exec.h"
+#include "env.h"
+#include "exec.h"
 #include <assert.h>
 #include <errno.h>
 #include <signal.h>
