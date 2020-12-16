@@ -91,11 +91,24 @@ int exec_cd(int argc, char** argv) {
     return EXIT_VALUE_BAD_ARG;
 }
 
-static pid_t child_pid = -1;
+static void handler_do_nothing(int sig) {
+    (void)sig;
+}
 
-static void forward_signal(int sig) {
-    assert(child_pid != -1);
-    kill(child_pid, sig);
+static void disable_sigint(struct sigaction* old_sa) {
+    struct sigaction sa = {
+        .sa_handler = handler_do_nothing,
+        .sa_flags = SA_RESTART
+    };
+    if (sigaction(SIGINT, &sa, old_sa) == -1) {
+        exit(EXIT_VALUE_INTERNAL);
+    }
+}
+
+static void restore_sigint(struct sigaction* old_sa) {
+    if (sigaction(SIGINT, old_sa, NULL) == -1) {
+        exit(EXIT_VALUE_INTERNAL);
+    }
 }
 
 int exec_subshell(char* cmd, char** argv) {
@@ -114,22 +127,17 @@ int exec_subshell(char* cmd, char** argv) {
         }
         return EXIT_VALUE_EXEC;
     default: {
-        child_pid = pid;
         int wstatus = 0;
-
-        struct sigaction sa = {
-            .sa_handler = forward_signal,
-            .sa_flags = SA_RESTART
-        }, old_sa;
-        sigaction(SIGINT, &sa, &old_sa);
+        struct sigaction old_sa;
+        disable_sigint(&old_sa);
         if (waitpid(pid, &wstatus, 0) != -1) {
-            sigaction(SIGINT, &old_sa, NULL);
+            restore_sigint(&old_sa);
             if (WIFSIGNALED(wstatus)) {
                 return EXIT_VALUE_SIG_OFFSET + WTERMSIG(wstatus);
             }
             return WEXITSTATUS(wstatus);
         }
-        sigaction(SIGINT, &old_sa, NULL);
+        restore_sigint(&old_sa);
     }
     }
     return EXIT_VALUE_EXEC;

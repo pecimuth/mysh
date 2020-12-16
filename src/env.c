@@ -41,6 +41,9 @@ int change_dir_home() {
 
 const char* change_dir_old() {
     const char* old = getenv("OLDPWD");
+    if (old == NULL) {
+        return NULL;
+    }
     if (change_dir(old) != EXIT_VALUE_SUCCESS) {
         return NULL;
     }

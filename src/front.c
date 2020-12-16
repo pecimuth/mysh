@@ -127,9 +127,13 @@ static int reset_prompt() {
 char* read_line_or_reset(char* prompt) {
     rl_signal_event_hook = reset_prompt;
     struct sigaction sa = { .sa_handler = signal_handler }, old_sa;
-    sigaction(SIGINT, &sa, &old_sa);
+    if (sigaction(SIGINT, &sa, &old_sa) == -1) {
+        exit(EXIT_VALUE_INTERNAL);
+    }
     char* line = readline(prompt);
-    sigaction(SIGINT, &old_sa, NULL);
+    if (sigaction(SIGINT, &old_sa, NULL) == -1) {
+        exit(EXIT_VALUE_INTERNAL);
+    }
     return line;
 }
 
