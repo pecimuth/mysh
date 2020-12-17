@@ -29,6 +29,7 @@ void yyerror();
 
 %type<command>                  command
 %type<redir_command>            redir_command
+%type<redir_command>            redir_command_suffix
 %type<redir_command_node>       redir_command_node
 
 %%
@@ -48,19 +49,21 @@ script:
     ;
 
 script_line:
-    redir_command { execute_redir_command($1); destroy_redir_command($1); }
+    redir_command { execute_redir_command($1); print_redir_command($1); destroy_redir_command($1); }
     |
-    script_line SEMIC redir_command { execute_redir_command($3); destroy_redir_command($3); }
+    script_line SEMIC redir_command { execute_redir_command($3); print_redir_command($3); destroy_redir_command($3); }
+    ;
+
+redir_command_suffix:
+    %empty { $$ = make_redir_command(); }
+    |
+    redir_command_node redir_command_suffix { $$ = $2; prepend_redir_command_node($$, $1); }
     ;
 
 redir_command:
-    redir_command_node { $$ = make_redir_command($1); }
-    |
-    command {$$ = make_redir_command(make_redir_command_node(COMMAND, $1, NULL)); }
+    command redir_command_suffix {$$ = $2; prepend_redir_command_node($$, make_redir_command_node(COMMAND, $1, NULL)); }
     |
     redir_command_node redir_command { $$ = $2; prepend_redir_command_node($$, $1); }
-    |
-    command redir_command {$$ = $2; prepend_redir_command_node($$, make_redir_command_node(COMMAND, $1, NULL)); }
     ;
 
 redir_command_node:

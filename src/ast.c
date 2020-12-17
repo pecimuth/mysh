@@ -56,7 +56,7 @@ void print_command(command_t* head) {
     word_node_t* node;
     SLIST_FOREACH(node, head, nodes)
     printf(" %s", node->word);
-    printf(" ]\n");
+    printf(" ]");
 }
 
 redir_command_t* make_redir_command() {
@@ -91,6 +91,7 @@ redir_command_node_t* make_redir_command_node(redir_node_kind_t kind, command_t*
     if (node == NULL) {
         exit(EXIT_VALUE_MEMORY);
     }
+    node->kind = kind;
     node->command = command;
     node->filename = filename;
     return node;
@@ -108,4 +109,18 @@ void destroy_redir_command_node(redir_command_node_t* node) {
         destroy_word_node(node->filename);
     }
     free(node);
+}
+
+void print_redir_command(redir_command_t* head) {
+    assert(head != NULL);
+    printf("{");
+    redir_command_node_t* node;
+    SLIST_FOREACH(node, head, nodes) {
+        if (node->kind == COMMAND) {
+            print_command(node->command);
+        } else {
+            printf(" %s", node->filename->word);
+        }
+    }
+    printf(" }\n");
 }

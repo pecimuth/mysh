@@ -39,5 +39,5 @@ void destroy_redir_command(redir_command_t* head);
 void prepend_redir_command_node(redir_command_t* head, redir_command_node_t* node);
 redir_command_node_t* make_redir_command_node(redir_node_kind_t kind, command_t* command, word_node_t* filename);
 void destroy_redir_command_node(redir_command_node_t* node);
-
+void print_redir_command(redir_command_t* head);
 #endif
