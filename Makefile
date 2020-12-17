@@ -26,10 +26,10 @@ $(BUILD)/lexer.c : $(SRC)/lexer.l
 	flex -o $(BUILD)/lexer.c $<
 
 $(BUILD)/parser.c : $(SRC)/parser.y
-	bison --defines=$(BUILD)/parser.h -o $(BUILD)/parser.c $<
+	bison --verbose --defines=$(BUILD)/parser.h -o $(BUILD)/parser.c $<
 
 $(BUILD)/parser.h : $(SRC)/parser.y
-	bison --defines=$(BUILD)/parser.h -o $(BUILD)/parser.c $<
+	bison --verbose --defines=$(BUILD)/parser.h -o $(BUILD)/parser.c $<
 
 $(BUILD)/lexer.o : $(BUILD)/lexer.c $(BUILD)/parser.h
 	$(CC) $(CFLAGS) -c $< -o $@

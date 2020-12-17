@@ -19,6 +19,10 @@
 }
 [a-zA-Z0-9_/.+-]+      { yylval.word_node = make_word_node(yytext); return WORD; }
 #                      { BEGIN(comment); }
+\|                     { return PIPE; }
+>>                     { return DGT; }
+>                      { return GT; }
+\<                     { return LT; }
 ;                      { return SEMIC; }
 \n                     { return LF; }
 <<EOF>>                { return END; }

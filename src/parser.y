@@ -13,15 +13,23 @@ void yyerror();
 
 %union {
     struct word_node* word_node;
-    struct word_node_head word_node_head;
+    struct command* command;
+    struct redir_command* redir_command;
+    struct redir_command_node* redir_command_node;
 }
 
 %token                          END         0       "end of file"
 %token                          SEMIC               ";"
 %token                          LF                  "line feed"
+%token                          PIPE                "|"
+%token                          LT                  "<"
+%token                          GT                  ">"
+%token                          DGT                 ">>"
 %token<word_node>               WORD                "word"
 
-%type<word_node_head>           command
+%type<command>                  command
+%type<redir_command>            redir_command
+%type<redir_command_node>       redir_command_node
 
 %%
 
@@ -40,15 +48,33 @@ script:
     ;
 
 script_line:
-    command                     { execute(&$1); destroy_word_nodes(&$1); }
+    redir_command { execute_redir_command($1); destroy_redir_command($1); }
     |
-    script_line SEMIC command   { execute(&$3); destroy_word_nodes(&$3); }
+    script_line SEMIC redir_command { execute_redir_command($3); destroy_redir_command($3); }
+    ;
+
+redir_command:
+    redir_command_node { $$ = make_redir_command($1); }
+    |
+    command {$$ = make_redir_command(make_redir_command_node(COMMAND, $1, NULL)); }
+    |
+    redir_command_node redir_command { $$ = $2; prepend_redir_command_node($$, $1); }
+    |
+    command redir_command {$$ = $2; prepend_redir_command_node($$, make_redir_command_node(COMMAND, $1, NULL)); }
+    ;
+
+redir_command_node:
+    LT WORD { $$ = make_redir_command_node(RE_INPUT, NULL, $2); }
+    |
+    GT WORD { $$ = make_redir_command_node(RE_OUTPUT, NULL,  $2); }
+    |
+    DGT WORD { $$ = make_redir_command_node(RE_APPEND, NULL, $2); }
     ;
 
 command:
-    WORD                        { $$ = make_word_node_head(); prepend_word_node(&$$, $1);}
+    WORD { $$ = make_command(); prepend_word_node($$, $1);}
     |
-    WORD command                { $$ = $2; prepend_word_node(&$$, $1); }
+    WORD command { $$ = $2; prepend_word_node($$, $1); }
     ;
 
 %%

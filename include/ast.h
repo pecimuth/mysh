@@ -7,15 +7,37 @@ typedef struct word_node {
     SLIST_ENTRY(word_node) nodes;
 } word_node_t;
 
-typedef SLIST_HEAD(word_node_head, word_node) word_node_head_t;
+typedef SLIST_HEAD(command, word_node) command_t;
 
 word_node_t* make_word_node(const char* yytext);
 void destroy_word_node(word_node_t* node);
 
-word_node_head_t make_word_node_head();
-void destroy_word_nodes(word_node_head_t* head);
-void prepend_word_node(word_node_head_t* head, word_node_t* node);
+command_t* make_command();
+void destroy_command(command_t* head);
+void prepend_word_node(command_t* head, word_node_t* node);
 
-void print_word_nodes(word_node_head_t* head);
+void print_command(command_t* head);
+
+typedef enum redir_node_kind {
+    COMMAND,
+    RE_INPUT,
+    RE_OUTPUT,
+    RE_APPEND
+} redir_node_kind_t;
+
+typedef struct redir_command_node {
+    redir_node_kind_t kind;
+    command_t* command; // set iff kind == COMMAND
+    word_node_t* filename; // set iff kind == RE_*
+    SLIST_ENTRY(redir_command_node) nodes;
+} redir_command_node_t;
+
+typedef SLIST_HEAD(redir_command, redir_command_node) redir_command_t;
+
+redir_command_t* make_redir_command();
+void destroy_redir_command(redir_command_t* head);
+void prepend_redir_command_node(redir_command_t* head, redir_command_node_t* node);
+redir_command_node_t* make_redir_command_node(redir_node_kind_t kind, command_t* command, word_node_t* filename);
+void destroy_redir_command_node(redir_command_node_t* node);
 
 #endif

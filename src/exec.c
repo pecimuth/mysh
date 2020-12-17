@@ -10,7 +10,23 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-void execute(word_node_head_t* head) {
+void execute_redir_command(redir_command_t* head) {
+    assert(head != NULL);
+
+    redir_command_node_t* node;
+    SLIST_FOREACH(node, head, nodes) {
+        switch (node->kind)
+        {
+        case COMMAND:
+            execute_command(node->command);
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void execute_command(command_t* head) {
     assert(head != NULL);
 
     if (has_lexer_error()) {
@@ -42,7 +58,7 @@ void execute(word_node_head_t* head) {
     set_exit_value(exit_value);
 }
 
-void prepare_args(word_node_head_t* head, int* argc, char*** argv) {
+void prepare_args(command_t* head, int* argc, char*** argv) {
     *argc = 0;
     word_node_t* node;
     SLIST_FOREACH(node, head, nodes)
