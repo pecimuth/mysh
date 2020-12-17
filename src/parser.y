@@ -49,9 +49,9 @@ script:
     ;
 
 script_line:
-    redir_command { execute_redir_command($1); print_redir_command($1); destroy_redir_command($1); }
+    redir_command { execute($1); /*print_redir_command($1);*/ destroy_redir_command($1); }
     |
-    script_line SEMIC redir_command { execute_redir_command($3); print_redir_command($3); destroy_redir_command($3); }
+    script_line SEMIC redir_command { execute($3); /*print_redir_command($3);*/ destroy_redir_command($3); }
     ;
 
 redir_command_suffix:

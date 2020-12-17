@@ -9,24 +9,12 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
-void execute_redir_command(redir_command_t* head) {
-    assert(head != NULL);
+#define OK_OR_RETURN(result, retval) if ((result) == -1) return retval
 
-    redir_command_node_t* node;
-    SLIST_FOREACH(node, head, nodes) {
-        switch (node->kind)
-        {
-        case COMMAND:
-            execute_command(node->command);
-            break;
-        default:
-            break;
-        }
-    }
-}
-
-void execute_command(command_t* head) {
+void execute(redir_command_t* head) {
     assert(head != NULL);
 
     if (has_lexer_error()) {
@@ -34,14 +22,16 @@ void execute_command(command_t* head) {
         return;
     }
 
-    word_node_t* node = SLIST_FIRST(head);
+    command_t* cmd = get_command(head);
+    assert(cmd != NULL);
+    word_node_t* node = SLIST_FIRST(cmd);
     assert(node != NULL);
     assert(node->word != NULL);
 
     int argc;
     char** argv;
 
-    prepare_args(head, &argc, &argv);
+    prepare_args(cmd, &argc, &argv);
     int exit_value = 1;
 
     if (strcmp(node->word, "exit") == 0) {
@@ -51,11 +41,23 @@ void execute_command(command_t* head) {
     } else if (strcmp(node->word, "cd") == 0) {
         exit_value = exec_cd(argc, argv);
     } else {
-        exit_value = exec_subshell(node->word, argv);
+        exit_value = exec_subshell(head, node->word, argv);
     }
 
     free(argv);
     set_exit_value(exit_value);
+}
+
+command_t* get_command(redir_command_t* head) {
+    assert(head != NULL);
+    redir_command_node_t* node;
+    SLIST_FOREACH(node, head, nodes) {
+        if (node->kind == COMMAND) {
+            return node->command;
+        }
+    }
+    assert(false);
+    return NULL;
 }
 
 void prepare_args(command_t* head, int* argc, char*** argv) {
@@ -127,12 +129,16 @@ static void restore_sigint(struct sigaction* old_sa) {
     }
 }
 
-int exec_subshell(char* cmd, char** argv) {
+int exec_subshell(redir_command_t* head, char* cmd, char** argv) {
     int pid = fork();
     switch (pid) {
     case -1:
         return EXIT_VALUE_EXEC;
-    case 0:
+    case 0: {
+        int result = apply_redirections(head);
+        if (result != EXIT_VALUE_SUCCESS) {
+            return result;
+        }
         execvp(cmd, argv);
         if (errno == ENOENT) {
             fprintf(stderr, "No such file '%s'\n", cmd);
@@ -142,6 +148,7 @@ int exec_subshell(char* cmd, char** argv) {
             exit(EXIT_VALUE_PERMISSION);
         }
         return EXIT_VALUE_EXEC;
+    }
     default: {
         int wstatus = 0;
         struct sigaction old_sa;
@@ -157,4 +164,35 @@ int exec_subshell(char* cmd, char** argv) {
     }
     }
     return EXIT_VALUE_EXEC;
+}
+
+int apply_redirections(redir_command_t* head) {
+    assert(head != NULL);
+    int fd = -1;
+    redir_command_node_t* node;
+    SLIST_FOREACH(node, head, nodes) {
+        switch (node->kind) {
+        case RE_INPUT:
+            assert(node->filename != NULL && node->filename->word != NULL);
+            fd = open(node->filename->word, O_RDONLY);
+            OK_OR_RETURN(fd, EXIT_VALUE_OPEN);
+            OK_OR_RETURN(dup2(fd, 0), EXIT_VALUE_INTERNAL);
+            break;
+        case RE_OUTPUT:
+            assert(node->filename != NULL && node->filename->word != NULL);
+            fd = open(node->filename->word, O_WRONLY | O_CREAT, 0666);
+            OK_OR_RETURN(fd, EXIT_VALUE_OPEN);
+            OK_OR_RETURN(dup2(fd, 1), EXIT_VALUE_INTERNAL);
+            break;
+        case RE_APPEND:
+            assert(node->filename != NULL && node->filename->word != NULL);
+            fd = open(node->filename->word, O_WRONLY | O_CREAT | O_APPEND, 0666);
+            OK_OR_RETURN(fd, EXIT_VALUE_OPEN);
+            OK_OR_RETURN(dup2(fd, 1), EXIT_VALUE_INTERNAL);
+            break;
+        default:
+            break;
+        }
+    }
+    return EXIT_VALUE_SUCCESS;
 }
