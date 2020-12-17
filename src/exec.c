@@ -2,25 +2,67 @@
 #include "exec.h"
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
-#define OK_OR_RETURN(result, retval) if ((result) == -1) return retval
+#define OK_OR_RETURN(result, retval) \
+    if ((result) == -1) \
+    return retval
 
-void execute(redir_command_t* head) {
+int execute(pipe_command_t* head) {
     assert(head != NULL);
-
+    
     if (has_lexer_error()) {
         clear_lexer_error();
-        return;
+        return EXIT_VALUE_SUCCESS;
     }
+
+    pipe_command_node_t* elem = SLIST_FIRST(head);
+    SLIST_REMOVE_HEAD(head, nodes);
+
+    if (SLIST_EMPTY(head)) {
+        execute_redir_command(elem->redir_command);    
+        return EXIT_VALUE_SUCCESS;
+    }
+
+    int fd[2];
+    OK_OR_RETURN(pipe(fd), EXIT_VALUE_INTERNAL);
+
+    int pid = fork();
+    switch (pid) {
+    case -1:
+        return EXIT_VALUE_INTERNAL;
+    case 0:
+        OK_OR_RETURN(close(fd[0]), EXIT_VALUE_INTERNAL);
+        OK_OR_RETURN(dup2(fd[1], 1), EXIT_VALUE_INTERNAL);
+        OK_OR_RETURN(close(fd[1]), EXIT_VALUE_INTERNAL);
+        exit(execute(head));
+        break;
+    default: {
+        int old_input = dup(0);
+        OK_OR_RETURN(old_input, EXIT_VALUE_INTERNAL);
+        OK_OR_RETURN(dup2(fd[0], 0), EXIT_VALUE_INTERNAL);
+        OK_OR_RETURN(close(fd[0]), EXIT_VALUE_INTERNAL);
+        OK_OR_RETURN(close(fd[1]), EXIT_VALUE_INTERNAL);
+        execute_redir_command(elem->redir_command);
+        OK_OR_RETURN(waitpid(pid, NULL, 0), EXIT_VALUE_INTERNAL);
+        OK_OR_RETURN(dup2(old_input, 0), EXIT_VALUE_INTERNAL);
+        OK_OR_RETURN(close(old_input), EXIT_VALUE_INTERNAL);
+        break;
+    }
+    }
+    return EXIT_VALUE_SUCCESS;
+}
+
+void execute_redir_command(redir_command_t* head) {
+    assert(head != NULL);
 
     command_t* cmd = get_command(head);
     assert(cmd != NULL);

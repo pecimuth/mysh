@@ -40,4 +40,15 @@ void prepend_redir_command_node(redir_command_t* head, redir_command_node_t* nod
 redir_command_node_t* make_redir_command_node(redir_node_kind_t kind, command_t* command, word_node_t* filename);
 void destroy_redir_command_node(redir_command_node_t* node);
 void print_redir_command(redir_command_t* head);
+
+typedef struct pipe_command_node {
+    redir_command_t* redir_command;
+    SLIST_ENTRY(pipe_command_node) nodes;
+} pipe_command_node_t;
+
+typedef SLIST_HEAD(pipe_command, pipe_command_node) pipe_command_t;
+
+pipe_command_t* make_pipe_command();
+void prepend_redir_command(pipe_command_t* head, redir_command_t* redir_command);
+
 #endif

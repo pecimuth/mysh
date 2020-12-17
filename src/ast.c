@@ -124,3 +124,23 @@ void print_redir_command(redir_command_t* head) {
     }
     printf(" }\n");
 }
+
+pipe_command_t* make_pipe_command() {
+    pipe_command_t* head = malloc(sizeof(pipe_command_t));
+    if (head == NULL) {
+        exit(EXIT_VALUE_MEMORY);
+    }
+    SLIST_INIT(head);
+    return head;
+}
+
+void prepend_redir_command(pipe_command_t* head, redir_command_t* redir_command) {
+    assert(head != NULL);
+    assert(redir_command != NULL);
+    pipe_command_node_t* node = malloc(sizeof(redir_command_node_t));
+    if (node == NULL) {
+        exit(EXIT_VALUE_MEMORY);
+    }
+    node->redir_command = redir_command;
+    SLIST_INSERT_HEAD(head, node, nodes);
+}

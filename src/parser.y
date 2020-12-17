@@ -16,6 +16,7 @@ void yyerror();
     struct command* command;
     struct redir_command* redir_command;
     struct redir_command_node* redir_command_node;
+    struct pipe_command* pipe_command;
 }
 
 %token                          END         0       "end of file"
@@ -31,6 +32,7 @@ void yyerror();
 %type<redir_command>            redir_command
 %type<redir_command>            redir_command_suffix
 %type<redir_command_node>       redir_command_node
+%type<pipe_command>             pipe_command
 
 %%
 
@@ -49,9 +51,15 @@ script:
     ;
 
 script_line:
-    redir_command { execute($1); /*print_redir_command($1);*/ destroy_redir_command($1); }
+    pipe_command { execute($1); /*print_redir_command($1); destroy_redir_command($1); */ }
     |
-    script_line SEMIC redir_command { execute($3); /*print_redir_command($3);*/ destroy_redir_command($3); }
+    script_line SEMIC pipe_command { execute($3); /*print_redir_command($3); destroy_redir_command($3); */ }
+    ;
+
+pipe_command:
+    redir_command { $$ = make_pipe_command(); prepend_redir_command($$, $1); }
+    |
+    pipe_command PIPE redir_command { $$ = $1; prepend_redir_command($$, $3); }
     ;
 
 redir_command_suffix:
