@@ -2,7 +2,8 @@
 #define EXEC_H
 #include "ast.h"
 
-int execute(pipe_command_t* head);
+void execute(pipe_command_t* head);
+int execute_pipe_command(pipe_command_t* head);
 void execute_redir_command(redir_command_t* head);
 
 command_t* get_command(redir_command_t* head);

@@ -51,9 +51,9 @@ script:
     ;
 
 script_line:
-    pipe_command { execute($1); /*print_redir_command($1); destroy_redir_command($1); */ }
+    pipe_command { execute($1); }
     |
-    script_line SEMIC pipe_command { execute($3); /*print_redir_command($3); destroy_redir_command($3); */ }
+    script_line SEMIC pipe_command { execute($3); }
     ;
 
 pipe_command:

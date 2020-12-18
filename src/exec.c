@@ -12,52 +12,73 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#define OK_OR_RETURN(result, retval) \
+#define IO_EXPECT_OK(result) \
     if ((result) == -1) \
-    return retval
+    return EXIT_VALUE_IO
 
-int execute(pipe_command_t* head) {
+void execute(pipe_command_t* head) {
     assert(head != NULL);
     
     if (has_lexer_error()) {
         clear_lexer_error();
-        return EXIT_VALUE_SUCCESS;
+        destroy_pipe_command(head);
+        return;
     }
+
+    int result = execute_pipe_command(head);
+    if (result != EXIT_VALUE_SUCCESS) {
+        exit(result);
+    }
+}
+
+int execute_pipe_command(pipe_command_t* head) {
+    assert(head != NULL);
+    assert(!SLIST_EMPTY(head));
 
     pipe_command_node_t* elem = SLIST_FIRST(head);
     SLIST_REMOVE_HEAD(head, nodes);
 
     if (SLIST_EMPTY(head)) {
-        execute_redir_command(elem->redir_command);    
+        execute_redir_command(elem->redir_command);
+        destroy_pipe_command_node(elem);
+        destroy_pipe_command(head);
         return EXIT_VALUE_SUCCESS;
     }
 
     int fd[2];
-    OK_OR_RETURN(pipe(fd), EXIT_VALUE_INTERNAL);
+    IO_EXPECT_OK(pipe(fd));
 
     int pid = fork();
     switch (pid) {
     case -1:
         return EXIT_VALUE_INTERNAL;
     case 0:
-        OK_OR_RETURN(close(fd[0]), EXIT_VALUE_INTERNAL);
-        OK_OR_RETURN(dup2(fd[1], 1), EXIT_VALUE_INTERNAL);
-        OK_OR_RETURN(close(fd[1]), EXIT_VALUE_INTERNAL);
-        exit(execute(head));
+        IO_EXPECT_OK(close(fd[0]));
+        IO_EXPECT_OK(dup2(fd[1], 1));
+        IO_EXPECT_OK(close(fd[1]));
+        exit(execute_pipe_command(head));
         break;
     default: {
+        // save the current input fd
         int old_input = dup(0);
-        OK_OR_RETURN(old_input, EXIT_VALUE_INTERNAL);
-        OK_OR_RETURN(dup2(fd[0], 0), EXIT_VALUE_INTERNAL);
-        OK_OR_RETURN(close(fd[0]), EXIT_VALUE_INTERNAL);
-        OK_OR_RETURN(close(fd[1]), EXIT_VALUE_INTERNAL);
+        IO_EXPECT_OK(old_input);
+
+        // redirect pipe's output
+        IO_EXPECT_OK(dup2(fd[0], 0));
+        IO_EXPECT_OK(close(fd[0]));
+        IO_EXPECT_OK(close(fd[1]));
+
         execute_redir_command(elem->redir_command);
-        OK_OR_RETURN(waitpid(pid, NULL, 0), EXIT_VALUE_INTERNAL);
-        OK_OR_RETURN(dup2(old_input, 0), EXIT_VALUE_INTERNAL);
-        OK_OR_RETURN(close(old_input), EXIT_VALUE_INTERNAL);
+        IO_EXPECT_OK(waitpid(pid, NULL, 0));
+
+        // restore old input
+        IO_EXPECT_OK(dup2(old_input, 0));
+        IO_EXPECT_OK(close(old_input));
         break;
     }
     }
+    destroy_pipe_command_node(elem);
+    destroy_pipe_command(head);
     return EXIT_VALUE_SUCCESS;
 }
 
@@ -179,7 +200,7 @@ int exec_subshell(redir_command_t* head, char* cmd, char** argv) {
     case 0: {
         int result = apply_redirections(head);
         if (result != EXIT_VALUE_SUCCESS) {
-            return result;
+            exit(result);
         }
         execvp(cmd, argv);
         if (errno == ENOENT) {
@@ -189,7 +210,7 @@ int exec_subshell(redir_command_t* head, char* cmd, char** argv) {
             fprintf(stderr, "Permission denied: '%s'\n", cmd);
             exit(EXIT_VALUE_PERMISSION);
         }
-        return EXIT_VALUE_EXEC;
+        exit(EXIT_VALUE_EXEC);
     }
     default: {
         int wstatus = 0;
@@ -217,20 +238,20 @@ int apply_redirections(redir_command_t* head) {
         case RE_INPUT:
             assert(node->filename != NULL && node->filename->word != NULL);
             fd = open(node->filename->word, O_RDONLY);
-            OK_OR_RETURN(fd, EXIT_VALUE_OPEN);
-            OK_OR_RETURN(dup2(fd, 0), EXIT_VALUE_INTERNAL);
+            IO_EXPECT_OK(fd);
+            IO_EXPECT_OK(dup2(fd, 0));
             break;
         case RE_OUTPUT:
             assert(node->filename != NULL && node->filename->word != NULL);
             fd = open(node->filename->word, O_WRONLY | O_CREAT, 0666);
-            OK_OR_RETURN(fd, EXIT_VALUE_OPEN);
-            OK_OR_RETURN(dup2(fd, 1), EXIT_VALUE_INTERNAL);
+            IO_EXPECT_OK(fd);
+            IO_EXPECT_OK(dup2(fd, 1));
             break;
         case RE_APPEND:
             assert(node->filename != NULL && node->filename->word != NULL);
             fd = open(node->filename->word, O_WRONLY | O_CREAT | O_APPEND, 0666);
-            OK_OR_RETURN(fd, EXIT_VALUE_OPEN);
-            OK_OR_RETURN(dup2(fd, 1), EXIT_VALUE_INTERNAL);
+            IO_EXPECT_OK(fd);
+            IO_EXPECT_OK(dup2(fd, 1));
             break;
         default:
             break;
