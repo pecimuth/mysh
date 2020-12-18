@@ -18,7 +18,7 @@
 
 void execute(pipe_command_t* head) {
     assert(head != NULL);
-    
+
     if (has_lexer_error()) {
         clear_lexer_error();
         destroy_pipe_command(head);
@@ -31,6 +31,11 @@ void execute(pipe_command_t* head) {
     }
 }
 
+/**
+ * Recursively execute the command with pipes.
+ * Free the argument recursively.
+ * Non-success exit value implies inconsistent IO state.
+ */
 int execute_pipe_command(pipe_command_t* head) {
     assert(head != NULL);
     assert(!SLIST_EMPTY(head));
@@ -82,6 +87,11 @@ int execute_pipe_command(pipe_command_t* head) {
     return EXIT_VALUE_SUCCESS;
 }
 
+/**
+ * Execute a command with redirections.
+ * Either in the foreground or in a subshell.
+ * Set the shell exit value.
+ * */
 void execute_redir_command(redir_command_t* head) {
     assert(head != NULL);
 
@@ -111,6 +121,10 @@ void execute_redir_command(redir_command_t* head) {
     set_exit_value(exit_value);
 }
 
+/**
+ * Return the command part from a list of exactly one command
+ * and some number of redirections.
+ */
 command_t* get_command(redir_command_t* head) {
     assert(head != NULL);
     redir_command_node_t* node;
@@ -192,6 +206,10 @@ static void restore_sigint(struct sigaction* old_sa) {
     }
 }
 
+/**
+ * Create a subshell for the given command, which handles the redirections 
+ * and calls exec(). Wait for it to finish and collect its return value.
+ */
 int exec_subshell(redir_command_t* head, char* cmd, char** argv) {
     int pid = fork();
     switch (pid) {
@@ -229,6 +247,10 @@ int exec_subshell(redir_command_t* head, char* cmd, char** argv) {
     return EXIT_VALUE_EXEC;
 }
 
+/**
+ * Opens and redirects files in a command.
+ * Non-success exit value implies inconsistent IO state.
+ */
 int apply_redirections(redir_command_t* head) {
     assert(head != NULL);
     int fd = -1;
